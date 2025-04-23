@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # Config Server Replica Set
+  cfgsvr1:
+    image: mongo:latest
+    container_name: cfgsvr1
+    command: mongod --configsvr --replSet cfgrs --port 27017 --dbpath /data/db
+    volumes:
+      - cfgsvr1:/data/db
+    networks:
+      - mongo-cluster
+    ports:
+      - "27119:27017"
+
+  # Mongos Router
+  mongos:
+    image: mongo:latest
+    container_name: mongos
+    command: mongos --configdb cfgrs/cfgsvr1:27017 --port 27017
+    ports:
+      - "27017:27017"
+    networks:
+      - mongo-cluster
+    depends_on:
+      - cfgsvr1
+
+  # Setup container to initialize the replica sets and sharding
+  mongo-setup:
+    image: mongo:latest
+    container_name: mongo-setup
+    networks:
+      - mongo-cluster
+    depends_on:
+      - cfgsvr1
+      - mongos
+    volumes:
+      - ./init-scripts:/scripts
+    entrypoint: ["/scripts/init-sharding.sh"]
+
+networks:
+  mongo-cluster:
+    driver: bridge
+
+volumes:
+  cfgsvr1:
