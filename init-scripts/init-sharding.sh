@@ -5,7 +5,13 @@ sleep 30
 # Initialize Config Server Replica Set
 echo "Configuring Config Server Replica Set..."
 mongosh --host cfgsvr1 --port 27017 <<EOF
-
+rs.initiate({
+  _id: "cfgrs",
+  configsvr: true,
+  members: [
+    { _id: 0, host: "cfgsvr1:27017" }
+  ]
+})
 EOF
 
 # Wait for replica sets to initialize
